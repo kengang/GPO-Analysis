@@ -3,12 +3,7 @@
 # It's only to analyze processing of User policy, and NOT Machine policy #
 # It's only for testing purpose and not for production use               #
 ##########################################################################
-#                                                                        # 
-# The input file need to be in ANSI format                               #
-# GPSVC.log was created by default UTF-16 LE format                      #
-# Need manually open the file in notepad and save using ANSI encoding    #
-# Script is meant to be running in powershell_ISE                        #
-########################################################################## 
+ 
 <# Author: Ken Mei
 
  LEGAL DISCLAIMER
@@ -27,11 +22,7 @@ against any claims or lawsuits, including attorneys’ fees, that arise or resul
 from the use or distribution of the Sample Code.
  
 
-This script is meant to run from powershel_ISE
-This is to analaze GPP client-side extension processing
-The Input file must be in ANSI encoding.
-please note that default log file is in UTF16-LE format, which needs to be 
-manually converted. Easier way to do so is open it with notepad, and save it 
+This is to analaze GPO client-side extension processing:  GPSVC.log
 
 How to capture gpsvc log? By running Tss tool while repo the login
 .\TSS.ps1 -Scenario ADS_GPOEx -ADS_GPedit -ADS_GPmgmt -ADS_GPO -ADS_GPsvc -GPresult Both
@@ -48,9 +39,12 @@ reg add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Diagnostics" /v GPSvc
 
 ------------------------------------------------------------------------------------------------------------------------- #>
 
-#input file need to be in ANSI encoding format
 
-$gpsvclogs = Get-Content -Path "c:\sample-path-to-logfle-in-ANSI-encoding-format-gpsvc.log"
+param (
+  [string] $FilePath
+)
+
+
 
 
 # string used to find relevant info
@@ -67,6 +61,35 @@ $delimiter = "Processing extension"
 $policy_sets = @()
 $username = $null
 $list_of_polices=$nul
+
+
+#Function to read GPSVC.log from UTF16-LE log format to ANSI format
+Function read-logfile {
+  param(
+    [string]$logfile
+  )
+    if (-not $FilePath) {
+       Write-Host "Please specify a file name" -ForegroundColor red
+    } else{
+
+        if (!(Get-Item -path $logfile -ErrorAction SilentlyContinue)) {
+
+            Write-Host "Input file does not exist, please put in the correct path" -ForegroundColor Red
+        } else {
+
+        $logfilePath = (Get-Item -path $logfile).DirectoryName
+
+        $content = Get-Content -Path $logfile -Raw -Encoding Unicode
+
+        # Write the content to a new file with ANSI encoding
+         Set-Content -Path "$logfilepath\gpsvc-ansi.log" -Value $content -Encoding Default
+
+         $gpsvclogs = Get-Content -Path "$logfilepath\gpsvc-ansi.log"
+
+         return $gpsvclogs
+         }
+    }
+}
 
 #function to find the policies if avaiable being processed by each CSE
 function find-policies {
@@ -97,6 +120,8 @@ function find-policies {
   
 }  #end of find index function
 
+
+$gpsvclogs = read-logfile -logfile $FilePath
 
 #get the different pid/tid, each represent a different sessioin
 $sessions = ($gpsvclogs | Where-Object {$_ -match "$usergpo"} | ForEach-Object { ($_.split(" ")[0]).split("(")[1].split(")")[0]} |Select-Object -Unique)
