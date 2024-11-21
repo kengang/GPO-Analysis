@@ -1,13 +1,9 @@
 ﻿##########################################################################
-#       Script to parse GPPREfer User logs Debugging enable              #
+#       Script to parse GPP Reference User logs Debugging enable         #
 # It's only to analyze processing of User policy, and NOT Machine policy #
 # It's only for testing purpose and not for production use               #
 ##########################################################################
-#                                                                        # 
-# The input file need to be in ANSI format                               #
-# GPPRef user logs need manually open the file in notepad and save using # 
-# ANSI encoding; script is meant to be run in Powershell_ISE             #
-########################################################################## 
+
 <#     
 Author: Ken Mei
 
@@ -27,11 +23,7 @@ against any claims or lawsuits, including attorneys’ fees, that arise or resul
 from the use or distribution of the Sample Code.
  
 
-This script is meant to run from powershel_ISE
 This is to analaze GPP client-side extension processing
-The Input file must be in ANSI encoding.
-please note that default log file is in UTF16-LE format, which needs to be 
-manually converted. Easier way to do so is open it with notepad, and save it 
 
 How to capture GPPRef log? By running Tss tool while repo the login
 .\TSS.ps1 -Scenario ADS_GPOEx -ADS_GPedit -ADS_GPmgmt -ADS_GPO -ADS_GPsvc -GPresult Both
@@ -40,11 +32,9 @@ Or set it up manually
 https://learn.microsoft.com/en-us/troubleshoot/windows-server/group-policy/information-group-policy-preferences-events
 -----------------------------------------------------------------------------#>
 
-
-#The input file need to be in ANSI format  
-
-$GPPLogs = Get-Content -path "c:\sample-path-of-GPPREF_User.log"
-
+param (
+  [string] $FilePath
+)
 
 
 $string1 = "Entering Process"
@@ -55,6 +45,27 @@ $String5 = "GPO post-processing"
 $usernamestr = "%LogonUser%"
 $domainstr = "%LogonDomain%"
 $format = "HH:mm:ss:fff"
+
+#function to read the log file
+Function read-logfile {
+  param(
+    [string]$logfile
+  )
+    if (-not $FilePath) {
+       Write-Host "Please specify a file name" -ForegroundColor red
+    } else{
+
+        if (!(Get-Item -path $logfile -ErrorAction SilentlyContinue)) {
+
+            Write-Host "Input file does not exist, please put in the correct path" -ForegroundColor Red
+        } else {
+
+         $gppuserlogs = Get-Content -Path $logfile
+
+         return $gppuserlogs
+         }
+    }
+}
 
 
 #Function to determine time of event
@@ -149,6 +160,8 @@ function find-policies {
   return $objectcollection
   
 }  #end of find index function
+
+$GPPLogs = read-logfile -logfile $FilePath
 
 #get the different pid/tid, each represent a different sessioin
 $sessions = ($GPPLogs | Where-Object {$_ -match "$string1"} | ForEach-Object { ($_.split(" ")[2])} |Select-Object -Unique)
