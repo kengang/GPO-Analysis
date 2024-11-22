@@ -3,11 +3,6 @@
 # It's only to analyze processing of User policy, and NOT Machine policy #
 # It's only for testing purpose and not for production use               #
 ##########################################################################
-#                                                                        # 
-# The input file need to be in ANSI format                               #
-# GPPRef user logs need manually open the file in notepad and save using # 
-# ANSI encoding; script is meant to be run in Powershell_ISE             #
-########################################################################## 
 <#     
 Author: Ken Mei
 
@@ -28,7 +23,6 @@ from the use or distribution of the Sample Code.
  
 
 HOw-to:
-This script is meant to run from powershel_ISE
 This is to analaze GPP client-side extension processing base on eventlogs
 how to eport the eventlogs
 
@@ -39,10 +33,13 @@ https://learn.microsoft.com/en-us/troubleshoot/windows-server/group-policy/apply
 
 #>
 
-$path = "c:\sample-path-to-eventlog-file-Microsoft-Windows-GroupPolicy-Operational.evtx"
+param (
+  [string]$Path,
+  [int]$MaxEvents = 200 # look at latest 1000 events only
+)
 
 
-$max = 1000 # look at latest 1000 events only
+$max = $MaxEvents # look at latest 1000 events only
 $activityList = @()
 $evtID4001 = "4001"
 $evtID5017 = "5017"
@@ -66,13 +63,24 @@ Function find-events {
   return $evt
 }
 
-$query = ("<QueryList><Query Id=""0"" Path=""file://$Path""><Select Path=""file://$path"">*[System/Correlation/@ActivityID='{$activitID}']</Select></Query></QueryList>")
-
-$activityIDs = Get-WinEvent -Path $path -MaxEvents $max |Where-Object {$_.id -match $evtID4001}| ForEach-Object {$_.ActivityId.Guid} | select -Unique
 
 
-$collsessions = @()
-foreach ($activitID in $activityIDs) {
+if (-not $path) {
+     Write-Host "Please specify a file name" -ForegroundColor red
+       
+} else{
+
+     if (!(Get-Item -path $path -ErrorAction SilentlyContinue)) {
+          Write-Host "Input file does not exist, please put in the correct path" -ForegroundColor Red
+     } else {
+
+        $query = ("<QueryList><Query Id=""0"" Path=""file://$Path""><Select Path=""file://$path"">*[System/Correlation/@ActivityID='{$activitID}']</Select></Query></QueryList>")
+
+        $activityIDs = Get-WinEvent -Path $path -MaxEvents $max |Where-Object {$_.id -match $evtID4001}| ForEach-Object {$_.ActivityId.Guid} | select -Unique
+
+
+        $collsessions = @()
+        foreach ($activitID in $activityIDs) {
 
      $query = ("<QueryList><Query Id=""0"" Path=""file://$Path""><Select Path=""file://$path"">*[System/Correlation/@ActivityID='{$activitID}']</Select></Query></QueryList>")
      $events=Get-WinEvent -Path $Path -FilterXPath $query  -Oldest
@@ -134,6 +142,8 @@ foreach ($activitID in $activityIDs) {
 
 }
 
+ }
+}
 foreach ($evt in  $collsessions){
      write-host "***************************************************************************"
      write-host "****************************************************************************"
