@@ -175,10 +175,11 @@ Function get-user-policy-data{
        write-host "******************************" -ForegroundColor Red
 
        foreach ($session in $ErrorSessions){  
-       write-host "Below session has error, please examine manual by creating a custom view in eventlog"
-       write-host "  date/time: "$session.error_time
-       Write-Host "  session activity id: " $session.activityID
-       write-host "  xml filter: " ("<QueryList><Query Id=""0"" Path=""file://$Logname""><Select Path=""file://$Logname"">*[System/Correlation/@ActivityID='{$session}']</Select></Query></QueryList>") -ForegroundColor Magenta
+           $activityId = $session.activityID
+           write-host "Below session has error, please examine manual by creating a custom view in eventlog"
+           write-host "  date/time: "$session.error_time
+           Write-Host "  session activity id: " $session.activityID
+           write-host "  xml filter: " ("<QueryList><Query Id=""0"" Path=""$Logname""><Select Path=""$Logname"">*[System/Correlation/@ActivityID='{$activityID}']</Select></Query></QueryList>") -ForegroundColor Magenta
     }
 }
 }
@@ -345,10 +346,11 @@ Function get-computer-policy-data {
        write-host "******************************" -ForegroundColor Red
 
        foreach ($session in $ErrorSessions){  
+           $activityId = $session.activityID
            write-host "Below session has error, please examine manual by creating a custom view in eventlog"
            write-host "  date/time: "$session.error_time
            Write-Host "  session activity id: " $session.activityID
-           write-host "xml filter: " ("<QueryList><Query Id=""0"" Path=""file://$Logname""><Select Path=""file://$Logname"">*[System/Correlation/@ActivityID='{$session}']</Select></Query></QueryList>") -ForegroundColor Magenta
+           write-host "xml filter: " ("<QueryList><Query Id=""0"" Path=""$Logname""><Select Path=""$Logname"">*[System/Correlation/@ActivityID='{$activityId}']</Select></Query></QueryList>") -ForegroundColor Magenta
         }
     }
 }
